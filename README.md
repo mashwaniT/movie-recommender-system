@@ -49,3 +49,27 @@ Project Organization
        └── visualization  <- Scripts to create exploratory and results oriented visualizations
            └── visualize.py           
 
+
+# Medical Diagnosis using The National Institutes of Health Chest X-ray Dataset.
+
+## Abstract
+
+For my CP322 final project, I decided to build a machine learning algorithm to help doctors accurately diagnose lung diseases such as pneumonia, lung nodules and other diseases.
+
+There are roughly 100,000 unique x-ray images contained in the dataset each labelled with diagnoses of different lung diseases.
+
+The methodology will go as follows:
+
+- Preprocessing the dataset by resizing the images to a uniform size, converting to greyscale, then normalizing the pixel values
+
+- Splitting the dataset into training and testing sets, 70-30
+
+- Selecting a machine learning algorithm for image classification to train the dataset. Choice between Convolutional Neural Network, Random Forest, or Support Vector Machine
+
+- Train the selected algorithm on the training dataset using preprocessed images
+
+- Evaluate performance of the algorithm on the testing dataset using accuracy, precision, recall and F1-score
+
+- Tune hyperparameters if needed to achieve desired results
+
+- Once desired performance is attained, we can use it to make predictions on new, unseen chest x-ray images.
