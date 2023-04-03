@@ -1,74 +1,56 @@
 import os
-import numpy as np
 import pandas as pd
+import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Embedding, Dot, Flatten, Dense, Dropout
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.layers import Input, Embedding, Dot, Flatten, Dense, Dropout, Add
 from tensorflow.keras.regularizers import l2
-from tensorflow.keras.callbacks import EarlyStopping
-from sklearn.model_selection import train_test_split
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.losses import MeanSquaredError
+from tensorflow.keras.models import load_model
 
+def build_model(num_users, num_movies):
+    n_latent_factors = 40
+    regularizer = 0.0001
 
-ratings = pd.read_csv('..\\..\\data\\interim\\cleaned_ratings.csv')
-train, test = train_test_split(ratings, test_size=0.2, random_state=42)
-print(train.columns)
-
-user_enc = LabelEncoder()
-ratings['user_id'] = user_enc.fit_transform(ratings['userId'].values)
-n_users = ratings['user_id'].nunique()
-
-item_enc = LabelEncoder()
-ratings['item_id'] = item_enc.fit_transform(ratings['movieId'].values)
-n_items = ratings['item_id'].nunique()
-
-train['user_id'] = user_enc.transform(train['userId'].values)
-train['item_id'] = item_enc.transform(train['movieId'].values)
-test['user_id'] = user_enc.transform(test['userId'].values)
-test['item_id'] = item_enc.transform(test['movieId'].values)
-
-def create_model(n_users, n_items, embedding_size=50, hidden_layers=[10], dropout_rate=0.2, l2_reg=1e-5):
     user_input = Input(shape=(1,))
-    user_embedding = Embedding(n_users, embedding_size, embeddings_regularizer=l2(l2_reg))(user_input)
+    user_embedding = Embedding(num_users, n_latent_factors, embeddings_regularizer=l2(regularizer))(user_input)
     user_flatten = Flatten()(user_embedding)
 
-    item_input = Input(shape=(1,))
-    item_embedding = Embedding(n_items, embedding_size, embeddings_regularizer=l2(l2_reg))(item_input)
-    item_flatten = Flatten()(item_embedding)
+    movie_input = Input(shape=(1,))
+    movie_embedding = Embedding(num_movies, n_latent_factors, embeddings_regularizer=l2(regularizer))(movie_input)
+    movie_flatten = Flatten()(movie_embedding)
 
-    dot_product = Dot(axes=1)([user_flatten, item_flatten])
+    dot_product = Dot(axes=1)([user_flatten, movie_flatten])
 
-    x = dot_product
-    for layer_size in hidden_layers:
-        x = Dense(layer_size, activation='relu')(x)
-        x = Dropout(dropout_rate)(x)
-
-    output = Dense(1)(x)
-
-    model = Model(inputs=[user_input, item_input], outputs=output)
-    model.compile(optimizer=Adam(), loss='mse', metrics=['mae'])
+    model = Model(inputs=[user_input, movie_input], outputs=dot_product)
+    model.compile(loss=MeanSquaredError(), optimizer=Adam(), metrics=["mae"])
 
     return model
 
-model = create_model(n_users, n_items)
+# Load and preprocess the data
+ratings_small = pd.read_csv("..\\..\\data\\interim\\cleaned_ratings.csv")
+user_enc = LabelEncoder()
+ratings_small['user_id'] = user_enc.fit_transform(ratings_small['userId'].values)
+num_users = ratings_small['user_id'].nunique()
 
-early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+movie_enc = LabelEncoder()
+ratings_small['movie_id'] = movie_enc.fit_transform(ratings_small['movieId'].values)
+num_movies = ratings_small['movie_id'].nunique()
 
-history = model.fit(
-    [train['user_id'].values, train['item_id'].values],
-    train['rating'].values,
-    batch_size=64,
-    epochs=50,
-    verbose=1,
-    validation_split=0.1,
-    callbacks=[early_stopping]
+# Split the data into train and test sets
+user_id_train, user_id_test, movie_id_train, movie_id_test, rating_train, rating_test = train_test_split(
+    ratings_small['user_id'], ratings_small['movie_id'], ratings_small['rating'], test_size=0.2, random_state=42
 )
 
-test_loss, test_mae = model.evaluate(
-    [test['user_id'].values, test['item_id'].values],
-    test['rating'].values,
-    verbose=1
-)
+# Build the model with the best hyperparameters and train it
+best_model = build_model(num_users, num_movies)
+best_model.fit([user_id_train, movie_id_train], rating_train, batch_size=64, epochs=10, validation_split=0.1)
 
+# Evaluate the performance on the test set
+test_mae = best_model.evaluate([user_id_test, movie_id_test], rating_test, batch_size=64)[1]
 print(f"Test MAE: {test_mae:.4f}")
+
+# saving the trained model
+best_model.save = ("best_matrix_factorization_model.h5")
