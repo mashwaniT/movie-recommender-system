@@ -32,7 +32,7 @@ def main():
     with open("trained_svd_model.pkl", "wb") as file:
       pickle.dump(algorithm, file)
 
-    # Load trained model
+    # oad trained model
     with open("trained_svd_model.pkl", "rb") as file:
       loaded_algorithm = pickle.load(file)
 
