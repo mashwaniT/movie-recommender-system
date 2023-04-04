@@ -2,6 +2,7 @@ import os
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.neighbors import NearestNeighbors
+import pickle
 
 def create_combined_features(df, feature_columns):
     combined_features = df[feature_columns].apply(lambda x: " ".join(x.astype(str)), axis=1)
@@ -12,27 +13,48 @@ def train_nearest_neighbors_model(tfidf_matrix):
     model.fit(tfidf_matrix)
     return model
 
-PROCESSED_DATA_PATH = '../../data/processed/'
+def get_similar_movies(model, tfidf_matrix, movie_index, movies_df, k=10):
+    distances, indices = model.kneighbors(tfidf_matrix[movie_index], n_neighbors=k+1)
+    similar_movies = movies_df.iloc[indices.flatten()]
+    similar_movies = similar_movies[similar_movies.index != movie_index]
+    return similar_movies
 
-# Load the preprocessed data
-processed_movies_file = os.path.join(PROCESSED_DATA_PATH, "processed_movies.csv")
-movies_df = pd.read_csv(processed_movies_file)
 
-# Select the features to use for content-based filtering
-feature_columns = ['genres', 'original_language']
+def main():
+    PROCESSED_DATA_PATH = '../../data/processed/'
 
-# Create combined features
-combined_features = create_combined_features(movies_df, feature_columns)
+    # Load the preprocessed data
+    processed_movies_file = os.path.join(PROCESSED_DATA_PATH, "processed_movies.csv")
+    movies_df = pd.read_csv(processed_movies_file)
 
-# Generate the TF-IDF matrix
-vectorizer = TfidfVectorizer()
-tfidf_matrix = vectorizer.fit_transform(combined_features)
+    # Select the features to use for content-based filtering
+    feature_columns = ['genres', 'original_language']
 
-# Train the NearestNeighbors model
-model = train_nearest_neighbors_model(tfidf_matrix)
+    # Create combined features
+    combined_features = create_combined_features(movies_df, feature_columns)
 
-# Save the trained model
-import pickle
-model_file = os.path.join(PROCESSED_DATA_PATH, "nearest_neighbors_model.pkl")
-with open(model_file, "wb") as f:
-    pickle.dump(model, f)
+    # Generate the TF-IDF matrix
+    vectorizer = TfidfVectorizer()
+    tfidf_matrix = vectorizer.fit_transform(combined_features)
+
+    # Train the NearestNeighbors model
+    model = train_nearest_neighbors_model(tfidf_matrix)
+
+    # Save the trained model
+    model_file = os.path.join(PROCESSED_DATA_PATH, "nearest_neighbors_model.pkl")
+    with open(model_file, "wb") as f:
+        pickle.dump(model, f)
+
+    # Test the model: Find the 10 most similar movies for a given movie_title
+    movie_title = "Toy Story"
+
+    try:
+        movie_index = movies_df.index[movies_df['title'].str.contains(movie_title)].tolist()[0]
+        similar_movies = get_similar_movies(model, tfidf_matrix, movie_index, movies_df, k=10)
+        print(f"Movies similar to {movies_df.iloc[movie_index]['title']}:")
+        print(similar_movies[['title', 'genres']])
+    except IndexError:
+        print(f"Movie title '{movie_title}' not found in the preprocessed data.")
+
+if __name__ == "__main__":
+    main()
