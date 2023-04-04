@@ -28,11 +28,11 @@ def main():
     algorithm = SVD()
     algorithm.fit(trainset)
 
-    # saving the trained model
+    # Saving the trained model
     with open("trained_svd_model.pkl", "wb") as file:
       pickle.dump(algorithm, file)
 
-    # load trained model
+    # Load trained model
     with open("trained_svd_model.pkl", "rb") as file:
       loaded_algorithm = pickle.load(file)
 

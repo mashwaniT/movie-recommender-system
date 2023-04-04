@@ -3,6 +3,7 @@ import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.neighbors import NearestNeighbors
 import pickle
+import numpy as np
 
 def create_combined_features(df, feature_columns):
     combined_features = df[feature_columns].apply(lambda x: " ".join(x.astype(str)), axis=1)
@@ -44,6 +45,7 @@ def main():
     model_file = os.path.join(PROCESSED_DATA_PATH, "nearest_neighbors_model.pkl")
     with open(model_file, "wb") as f:
         pickle.dump(model, f)
+    np.save("tfidf_matrix.npy", tfidf_matrix.toarray())
 
     # Test the model: Find the 10 most similar movies for a given movie_title
     movie_title = "Toy Story"
