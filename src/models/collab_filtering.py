@@ -4,8 +4,7 @@ from surprise import Dataset, Reader
 from surprise.model_selection import train_test_split
 from surprise import SVD
 from surprise import accuracy
-import pickle
-
+from surprise import dump
 
 def main():
     # Paths
@@ -29,12 +28,10 @@ def main():
     algorithm.fit(trainset)
 
     # Saving the trained model
-    with open("trained_svd_model.pkl", "wb") as file:
-      pickle.dump(algorithm, file)
+    dump.dump('svd_model.dump', algo=algorithm)
 
-    # oad trained model
-    with open("trained_svd_model.pkl", "rb") as file:
-      loaded_algorithm = pickle.load(file)
+    # Load trained model
+    _, loaded_algorithm = dump.load('svd_model.dump')
 
     # Test the model
     predictions = loaded_algorithm.test(testset)

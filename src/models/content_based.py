@@ -2,6 +2,7 @@ import os
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.neighbors import NearestNeighbors
+from sklearn.metrics.pairwise import cosine_similarity
 import pickle
 import numpy as np
 
@@ -14,11 +15,17 @@ def train_nearest_neighbors_model(tfidf_matrix):
     model.fit(tfidf_matrix)
     return model
 
+
 def get_similar_movies(model, tfidf_matrix, movie_index, movies_df, k=10):
     distances, indices = model.kneighbors(tfidf_matrix[movie_index], n_neighbors=k+1)
-    similar_movies = movies_df.iloc[indices.flatten()]
-    similar_movies = similar_movies[similar_movies.index != movie_index]
+    indices = indices.flatten()[1:]
+    distances = distances.flatten()[1:]
+
+    similar_movies = movies_df.iloc[indices].copy()
+    similar_movies['cosine_distance'] = distances
+
     return similar_movies
+
 
 
 def main():
