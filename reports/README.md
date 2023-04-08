@@ -8,4 +8,4 @@ To keep YouTube Video Presentation (non-public) follow the steps below:
 
 To watch the video presentation, click the following YouTube link:
 
-![link]()
+![link](https://youtu.be/Mui_a80_vaA)
